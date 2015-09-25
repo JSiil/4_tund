@@ -1,5 +1,10 @@
 <?php
 
+	//ühenduse loomiseks
+	require_once("../../config.php");
+	$database="if15_jaagsii";
+	$mysqli=new mysqli($servername, $username, $password, $database);
+
   // muuutujad errorite jaoks
 	$email_error = "";
 	$password_error = "";
@@ -36,6 +41,24 @@
       // Kui oleme siia jõudnud, võime kasutaja sisse logida
 			if($password_error == "" && $email_error == ""){
 				echo "Võib sisse logida! Kasutajanimi on ".$email." ja parool on ".$password;
+				
+				$password_hash=hash("sha512", $password);
+				
+				$stmt=$mysqli->prepare("SELECT id, email FROM user_sample WHERE email=? AND password=?");
+				$stmt->bind_param("ss", $email, $password_hash);
+				
+				//paneme vastuse muutujatesse
+				$stmt->bind_result($id_from_db, $email_from_db);
+				$stmt->execute();
+				
+				if($stmt->fetch()){
+					//leidis
+					echo "kasutaja id=".$id_from_db;
+				}else{
+					//tühi, ei leidnud, midagi on valesti
+					echo "wrong email or password";
+				}
+				$stmt->close();
 			}
 
 		} // login if end
@@ -63,6 +86,21 @@
 
 			if(	$create_email_error == "" && $create_password_error == ""){
 				echo "Võib kasutajat luua! Kasutajanimi on ".$create_email." ja parool on ".$create_password;
+				
+				$password_hash=hash("sha512", $create_password);
+				echo"<br>";
+				echo $password_hash;
+				
+				$stmt=$mysqli->prepare("INSERT INTO user_sample (email, password)VALUE(?, ?)");
+				
+				echo $mysqli->error;
+				echo $stmt->error;
+				
+				//asendame küsimärgid muutujate väärtustega
+				//ss - s tähendab string iga muutuja kohta
+				$stmt->bind_param("ss", $create_email, $password_hash);
+				$stmt->execute();
+				$stmt->close();
       }
 
     } // create if end
@@ -78,6 +116,8 @@
   	$data = htmlspecialchars($data);
   	return $data;
   }
+  //paneme ühenduse kinni
+  $mysqli->close();
 
 ?>
 <!DOCTYPE html>
